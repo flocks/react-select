@@ -387,6 +387,7 @@ var Select = _react2['default'].createClass({
 		isLoading: _react2['default'].PropTypes.bool, // whether the Select is loading externally or not (such as options being loaded)
 		joinValues: _react2['default'].PropTypes.bool, // joins multiple values into a single form field with the delimiter (legacy mode)
 		labelKey: _react2['default'].PropTypes.string, // path of the label value in option objects
+		limited: _react2['default'].PropTypes.number, // limit the number of items in the tab
 		matchPos: _react2['default'].PropTypes.string, // (any|start) match the start or entire string when filtering
 		matchProp: _react2['default'].PropTypes.string, // (any|label|value) which option property to filter on
 		menuBuffer: _react2['default'].PropTypes.number, // optional buffer (in px) between the bottom of the viewport and the bottom of the menu
@@ -412,6 +413,7 @@ var Select = _react2['default'].createClass({
 		optionComponent: _react2['default'].PropTypes.func, // option component to render in dropdown
 		optionRenderer: _react2['default'].PropTypes.func, // optionRenderer: function (option) {}
 		options: _react2['default'].PropTypes.array, // array of options
+		pageSize: _react2['default'].PropTypes.number, // number of entries to page when using page up/down keys
 		placeholder: stringOrNode, // field placeholder, displayed when there's no value
 		required: _react2['default'].PropTypes.bool, // applies HTML5 required attribute when needed
 		resetValue: _react2['default'].PropTypes.any, // value to use when you clear the control
@@ -458,6 +460,7 @@ var Select = _react2['default'].createClass({
 			onBlurResetsInput: true,
 			openAfterFocus: false,
 			optionComponent: _Option2['default'],
+			pageSize: 5,
 			placeholder: 'Select...',
 			required: false,
 			resetValue: null,
@@ -544,6 +547,7 @@ var Select = _react2['default'].createClass({
 		}
 		if (prevProps.disabled !== this.props.disabled) {
 			this.setState({ isFocused: false }); // eslint-disable-line react/no-did-update-set-state
+			this.closeMenu();
 		}
 	},
 
@@ -761,6 +765,22 @@ var Select = _react2['default'].createClass({
 				// down
 				this.focusNextOption();
 				break;
+			case 33:
+				// page up
+				this.focusPageUpOption();
+				break;
+			case 34:
+				// page down
+				this.focusPageDownOption();
+				break;
+			case 35:
+				// end key
+				this.focusEndOption();
+				break;
+			case 36:
+				// home key
+				this.focusStartOption();
+				break;
 			// case 188: // ,
 			// 	if (this.props.allowCreate && this.props.multi) {
 			// 		event.preventDefault();
@@ -865,7 +885,9 @@ var Select = _react2['default'].createClass({
 
 	addValue: function addValue(value) {
 		var valueArray = this.getValueArray(this.props.value);
-		this.setValue(valueArray.concat(value));
+		if (typeof this.props.limited === "undefined" || valueArray.length < this.props.limited) {
+			this.setValue(valueArray.concat(value));
+		}
 	},
 
 	popValue: function popValue() {
@@ -912,6 +934,22 @@ var Select = _react2['default'].createClass({
 		this.focusAdjacentOption('previous');
 	},
 
+	focusPageUpOption: function focusPageUpOption() {
+		this.focusAdjacentOption('page_up');
+	},
+
+	focusPageDownOption: function focusPageDownOption() {
+		this.focusAdjacentOption('page_down');
+	},
+
+	focusStartOption: function focusStartOption() {
+		this.focusAdjacentOption('start');
+	},
+
+	focusEndOption: function focusEndOption() {
+		this.focusAdjacentOption('end');
+	},
+
 	focusAdjacentOption: function focusAdjacentOption(dir) {
 		var options = this._visibleOptions.map(function (option, index) {
 			return { option: option, index: index };
@@ -942,6 +980,24 @@ var Select = _react2['default'].createClass({
 				focusedIndex = focusedIndex - 1;
 			} else {
 				focusedIndex = options.length - 1;
+			}
+		} else if (dir === 'start') {
+			focusedIndex = 0;
+		} else if (dir === 'end') {
+			focusedIndex = options.length - 1;
+		} else if (dir === 'page_up') {
+			var potentialIndex = focusedIndex - this.props.pageSize;
+			if (potentialIndex < 0) {
+				focusedIndex = 0;
+			} else {
+				focusedIndex = potentialIndex;
+			}
+		} else if (dir === 'page_down') {
+			var potentialIndex = focusedIndex + this.props.pageSize;
+			if (potentialIndex > options.length - 1) {
+				focusedIndex = options.length - 1;
+			} else {
+				focusedIndex = potentialIndex;
 			}
 		}
 
@@ -1233,7 +1289,7 @@ var Select = _react2['default'].createClass({
 		if (!options.length) return null;
 
 		var focusedOption = this.state.focusedOption || selectedOption;
-		if (focusedOption) {
+		if (focusedOption && !focusedOption.disabled) {
 			var focusedOptionIndex = options.indexOf(focusedOption);
 			if (focusedOptionIndex !== -1) {
 				return focusedOptionIndex;
@@ -1292,7 +1348,7 @@ var Select = _react2['default'].createClass({
 		});
 
 		var removeMessage = null;
-		if (this.props.multi && !this.props.disabled && valueArray.length && !this.state.inputValue && this.state.isFocused) {
+		if (this.props.multi && !this.props.disabled && valueArray.length && !this.state.inputValue && this.state.isFocused && this.props.backspaceRemoves) {
 			removeMessage = _react2['default'].createElement(
 				'span',
 				{ id: this._instancePrefix + '-backspace-remove-message', className: 'Select-aria-only', 'aria-live': 'assertive' },

@@ -55,6 +55,7 @@ const Select = React.createClass({
 		isLoading: React.PropTypes.bool,            // whether the Select is loading externally or not (such as options being loaded)
 		joinValues: React.PropTypes.bool,           // joins multiple values into a single form field with the delimiter (legacy mode)
 		labelKey: React.PropTypes.string,           // path of the label value in option objects
+		limited: React.PropTypes.number,					  // limit the number of items in the tab
 		matchPos: React.PropTypes.string,           // (any|start) match the start or entire string when filtering
 		matchProp: React.PropTypes.string,          // (any|label|value) which option property to filter on
 		menuBuffer: React.PropTypes.number,         // optional buffer (in px) between the bottom of the viewport and the bottom of the menu
@@ -531,7 +532,9 @@ const Select = React.createClass({
 
 	addValue (value) {
 		var valueArray = this.getValueArray(this.props.value);
-		this.setValue(valueArray.concat(value));
+		if (typeof this.props.limited === "undefined" || valueArray.length < this.props.limited) {
+			this.setValue(valueArray.concat(value));
+		}
 	},
 
 	popValue () {
