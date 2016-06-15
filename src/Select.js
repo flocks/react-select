@@ -34,6 +34,7 @@ var Select = React.createClass({
 		inputProps: React.PropTypes.object,        // custom attributes for the Input (in the Select-control) e.g: {'data-foo': 'bar'}
 		isLoading: React.PropTypes.bool,           // whether the Select is loading externally or not (such as options being loaded)
 		labelKey: React.PropTypes.string,          // path of the label value in option objects
+		limited: React.PropTypes.number,				   // limit the number of items in the tab
 		matchPos: React.PropTypes.string,          // (any|start) match the start or entire string when filtering
 		matchProp: React.PropTypes.string,         // (any|label|value) which option property to filter on
 		multi: React.PropTypes.bool,               // multi-value input
@@ -323,7 +324,9 @@ var Select = React.createClass({
 	},
 
 	addValue (value) {
-		this.setValue(this.state.values.concat(value));
+		if (typeof this.props.limited === "undefined" && this.state.values.length < this.props.limited) {
+			this.setValue(this.state.values.concat(value));
+		}
 	},
 
 	popValue () {
