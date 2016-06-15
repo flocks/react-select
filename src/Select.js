@@ -324,7 +324,7 @@ var Select = React.createClass({
 	},
 
 	addValue (value) {
-		if (typeof this.props.limited === "undefined" && this.state.values.length < this.props.limited) {
+		if (typeof this.props.limited === "undefined" || this.state.values.length < this.props.limited) {
 			this.setValue(this.state.values.concat(value));
 		}
 	},
